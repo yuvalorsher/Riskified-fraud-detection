@@ -80,51 +80,42 @@ def plot_boxplots(
     return fig, axs
 
 
-def plot_temporal_distribution(dates: pd.Series, freq: str) -> tuple[plt.Figure, plt.Axes]:
+def plot_temporal_distribution(
+        dates: pd.Series,
+        freq: str,
+        figsize: tuple[int, int] | None = None,
+        include_all_periods: bool = True) -> tuple[plt.Figure, plt.Axes]:
     """
-    Plots the number of observations distirbution per frequency (month, quarter, year, etc.).
-    freq may be any of the frequencies allowed by pd's to_period(freq).
+    Plots the number of observations distribution per frequency (month, quarter, year, etc.).
+    If include_all_periods the horizontal axis will include all periods within the data range, even those with no
+    observations.
     """
-    fig, ax = plt.subplots()
-    dates.dt.to_period(freq=freq).dt.start_time.dt.date.value_counts().sort_index().plot.bar(ax=ax)
-    ax.set_xlabel(FREQ_SHORT_TO_FULL.get(freq, freq))
+    # Convert dates to periods and count occurrences
+    period_counts = dates.dt.to_period(freq).value_counts().sort_index()
+
+    if include_all_periods:
+        # Create a complete index of periods within the range
+        full_period_range = pd.period_range(start=dates.min(), end=dates.max(), freq=freq)
+        period_counts = period_counts.reindex(full_period_range, fill_value=0)
+
+    if freq == "W":
+        # Only show start of week
+        period_counts.index = _fix_week_index(period_counts.index)
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=figsize)
+    period_counts.plot.bar(ax=ax)
+    ax.set_xlabel(freq.upper())
+    ax.set_ylabel('Number of Observations')
+    ax.set_title(f'Temporal Distribution ({freq.upper()})')
+    plt.tight_layout()
+
     return fig, ax
 
 
-# def _get_period_start_times_from_series(
-#     s: pd.Series,
-# ) -> pd.Series:
-#     return s.dt.start_time.dt.date
+def _fix_week_index(weeks: pd.Index) -> pd.Index:
+    return weeks.map(lambda x: x.start_time.strftime('%Y-%m-%d'))
 
-# def _get_period_start_times_from_period_index(
-#     ind: pd.PeriodIndex,
-# ) -> pd.Series:
-#     return _get_period_start_times_from_series(ind.to_series())
-
-# # def plot_temporal_distribution(dates: pd.Series, freq: str) -> tuple[plt.Figure, plt.Axes]:
-# #     """
-# #     Plots the number of observations distirbution per frequency (month, quarter, year, etc.).
-# #     freq may be any of the frequencies allowed by pd's to_period(freq).
-# #     """
-# #     fig, ax = plt.subplots()
-# #     dates.dt.to_period(freq=freq).dt.start_time.dt.date.value_counts().sort_index().plot.bar(ax=ax)
-# #     ax.set_xlabel(FREQ_SHORT_TO_FULL.get(freq, freq))
-# #     return fig, ax
-
-# def plot_temporal_distribution(dates: pd.Series, freq: str) -> tuple[plt.Figure, plt.Axes]:
-#     """
-#     Plots the number of observations distirbution per frequency (month, quarter, year, etc.).
-#     freq may be any of the frequencies allowed by pd's to_period(freq).
-#     """
-#     fig, ax = plt.subplots()
-#     counts_per_period = dates.dt.to_period(freq=freq).value_counts().sort_index()
-#     counts_per_period_full = add_missing_periods(counts_per_period, freq).fillna(0)
-#     x = _get_period_start_times_from_period_index(counts_per_period_full.index).values
-#     y = counts_per_period_full.values.flatten()
-#     print(y)
-#     ax.bar(x, y)
-#     ax.set_xlabel(FREQ_SHORT_TO_FULL.get(freq, freq))
-#     return fig, ax
 
 def plot_scatter_matrix(
         df: pd.DataFrame,
