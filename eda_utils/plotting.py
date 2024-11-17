@@ -105,7 +105,7 @@ def plot_temporal_distribution(
     # Plot the data
     fig, ax = plt.subplots(figsize=figsize)
     period_counts.plot.bar(ax=ax)
-    ax.set_xlabel(freq.upper())
+    ax.set_xlabel(FREQ_SHORT_TO_FULL.get(freq, freq))
     ax.set_ylabel('Number of Observations')
     ax.set_title(f'Temporal Distribution ({freq.upper()})')
     plt.tight_layout()

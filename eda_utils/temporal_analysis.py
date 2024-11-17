@@ -95,13 +95,15 @@ def get_nans_per_period(
     """
     df, freq = _convert_to_period_if_needed(df=df, date_col=date_col, freq=freq)
     columns = columns if columns is not None else df.columns.difference([date_col])
-    return agg_multiple_cols_over_time(
+    nans_per_period = agg_multiple_cols_over_time(
         df=df,
         date_col=date_col,
         freq=None,  # date_col converter outside of loop so freq = None
         agg_cols=columns,
         agg_func=lambda s: s.isna().mean(),
     )
+    nans_per_period = nans_per_period.fillna(0)
+    return nans_per_period
 
 
 def agg_over_time_per_group(
@@ -127,7 +129,7 @@ def agg_over_time_per_group(
             agg_func=agg_func,
         ).rename(name) for name, group_df in df.groupby(groupby_cols)
     ]
-    return pd.concat(aggregations, axis=1)
+    return pd.concat(aggregations, axis=1).sort_index()
 
 
 def disp_nans_over_time(
@@ -136,14 +138,18 @@ def disp_nans_over_time(
         columns: list[str] | pd.Index | None = None,
         freq: str | None = None,
         axis: int | None = 0,
+        drop_no_nan_cols: bool = True,
 ):
     """
     Aggregates the NaN rate per period per column in columns.
     Return a Styler object in which columns are sorted by max NaN rate.
     """
     agged = get_nans_per_period(df, date_col=date_col, columns=columns, freq=freq)
+    if drop_no_nan_cols:
+        no_nan_cols = [col for col in (agged == 0).all().loc[lambda s: s].index]
+        agged = agged.drop(columns=no_nan_cols)
     sorted_cols = agged.max().sort_values(ascending=False).index
-    return agged[sorted_cols].style.background_gradient(axis=axis)
+    return agged[sorted_cols].style.background_gradient(axis=axis).format('{:.1%}')
 
 
 def plot_trends(
@@ -154,7 +160,7 @@ def plot_trends(
         agg_func: str | Callable[[pd.Series], int] = 'mean',
         ax: plt.Axes | None = None,
         figsize: tuple[int, int] | None = None,
-) -> plt.Axes:
+) -> tuple[plt.Axes, pd.DataFrame]:
     """
     Plots the trends of trend_cols over time, aggregated per freq using agg_func
     """
@@ -168,5 +174,5 @@ def plot_trends(
         agg_func=agg_func,
     )
 
-    ax = trends.plot(ax=ax)
-    return ax
+    ax = trends.plot(ax=ax, style='*-')
+    return ax, trends
