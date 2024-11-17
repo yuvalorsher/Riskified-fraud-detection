@@ -60,9 +60,10 @@ def agg_over_time(
     agged = df.groupby(date_col)[agg_col].agg(agg_func)
     if is_add_missing_periods:
         agged = add_missing_periods(agged, freq)
+        agged = agged.iloc[:, 0]
         # all_periods = pd.period_range(agged.index[0], agged.index[-1], freq=freq)
         # agged = pd.DataFrame(index = all_periods).merge(agged, left_index=True, right_index=True, how='left')
-    return agged.iloc[:, 0]
+    return agged
 
 
 def agg_multiple_cols_over_time(
@@ -113,6 +114,7 @@ def agg_over_time_per_group(
         groupby_cols: str | list[str],
         freq: str | None = None,
         agg_func: str | Callable[[pd.Series], int] = 'mean',
+        is_add_missing_periods: bool = True,
 ) -> pd.DataFrame:
     """
     Aggregates agg_col over time periods defined by date_col and per groups in groupby_col, and returns the time series per period.
@@ -127,6 +129,7 @@ def agg_over_time_per_group(
             date_col=date_col,
             freq=None,  # date_col converter outside of loop so freq = None
             agg_func=agg_func,
+            is_add_missing_periods=is_add_missing_periods,
         ).rename(name) for name, group_df in df.groupby(groupby_cols)
     ]
     return pd.concat(aggregations, axis=1).sort_index()
