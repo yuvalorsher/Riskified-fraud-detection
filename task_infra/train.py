@@ -119,7 +119,11 @@ class Classifier(Task):
         """
         Use predict_proba and self.threshold to predict
         """
-        pass
+        charge_back_probabilities = self.outputs[self.model_key].predict_proba(features)
+        return pd.Series(
+            data=charge_back_probabilities<self.outputs[self.threshold_key],
+            index=features.index
+        )
 
     def get_prediction_steps(self) -> Pipeline:
         return Pipeline(steps=['Classifier', self.outputs[self.model_key]])
