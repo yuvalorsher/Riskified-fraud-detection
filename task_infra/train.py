@@ -15,6 +15,12 @@ from task_infra.consts import DATE_COL
 
 
 class TrainModel(Task):
+    predictions_key = 'predictions'
+    train_set_key = 'train_set'
+    train_target_key = 'train_target'
+    test_set_key = 'test_set'
+    test_target_key = 'test_target'
+    declined_test_set_key = 'desclined_set'
 
     def __init__(self, params: dict, data_set: pd.DataFrame, dropped_label_dataset):
         self.dropped_label_dataset = dropped_label_dataset
@@ -25,6 +31,8 @@ class TrainModel(Task):
         self.subtasks.append(('TrainTestSplit', train_test_split))
         trainset_sample = Sampler.get_sampler(self.params['trainset_sampler_params'], train_test_split.outputs[train_test_split.train_df_key])
         self.subtasks.append(('TrainsetSampler', trainset_sample))
+        self.outputs[self.train_set_key] = trainset_sample.outputs[trainset_sample.output_df_key]
+        self.outputs[self.test_set_key] = train_test_split.outputs[train_test_split.test_df_key]
         model_features_train = PrepareTrainFeatures(
             self.params['features_params'],
             trainset_sample.outputs[trainset_sample.output_df_key]
@@ -35,9 +43,12 @@ class TrainModel(Task):
             trainset_sample.outputs[trainset_sample.output_df_key]
         )
         self.subtasks.append(('PrepairTargetTrain', model_target_train))
+        self.outputs[self.train_target_key] = model_target_train.outputs[model_target_train.target_key]
         test_features = model_features_train.transform(train_test_split.outputs[train_test_split.test_df_key])
         test_target = model_target_train.transform(train_test_split.outputs[train_test_split.test_df_key])
+        self.outputs[self.test_target_key] = test_target
         declined_testset = train_test_split.get_test_set(self.dropped_label_dataset)
+        self.outputs[self.declined_test_set_key] = declined_testset
         declined_features = model_features_train.transform(declined_testset)
         classifier = Classifier.get_classifier(
             classifier_params=self.params['classifier_params'],
@@ -54,6 +65,11 @@ class TrainModel(Task):
         # No time, but here would be another splitter to allow K-fold and early stopping.
         classifier.fit()
         self.subtasks.append(('Classifier', classifier))
+        self.outputs[self.predictions_key] = dict(
+            train=classifier.predict(model_features_train.outputs[model_features_train.features_key]),
+            test=classifier.predict(test_features),
+            declined=classifier.predict(declined_features)
+        )
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
