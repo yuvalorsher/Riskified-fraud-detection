@@ -29,39 +29,60 @@ class TrainModel(Task):
             trainset_sample.outputs[trainset_sample.output_df_key]
         )
         self.subtasks.append(('PrepairTargetTrain', model_target_train))
-        classifier = Classifier.get_classifier(self.params['classifier_params'])
-        # No time, but here would be another splitter to allow K-fold and early stopping.
-        classifier.fit(
-            features=model_features_train.outputs[model_features_train.features_key],
-            target=model_target_train.outputs[model_target_train.target_key]
+        test_features = model_features_train.transform(train_test_split.outputs[train_test_split.test_df_key])
+        test_target = model_target_train.transform(train_test_split.outputs[train_test_split.test_df_key])
+        classifier = Classifier.get_classifier(
+            classifier_params=self.params['classifier_params'],
+            train_set=self._get_dataset_dict(
+                features=model_features_train.outputs[model_features_train.features_key],
+                target=model_target_train.outputs[model_target_train.target_key]
+            ),
+            test_set=self._get_dataset_dict(
+                features=test_features,
+                target=test_target
+            )
         )
+        # No time, but here would be another splitter to allow K-fold and early stopping.
+        classifier.fit()
         self.subtasks.append(('Classifier', classifier))
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
 
+    @staticmethod
+    def _get_dataset_dict(features: pd.DataFrame, target: pd.Series) -> dict:
+        return dict(
+            features=features,
+            target=target
+        )
+
 
 class Classifier(Task):
     model_key = 'model'
-    trainset_features_key = 'trainset_features'
-    trainset_target_key = 'trainset_target_key'
+
+    def __init__(self, params: dict, train_set: dict, test_set: dict):
+        self.train_set = train_set
+        self.test_set = test_set
+        super().__init__(params)
 
     @staticmethod
-    def get_classifier(classifier_params: dict) -> Classifier:
+    def get_classifier(classifier_params: dict, train_set: dict, test_set: dict) -> Classifier:
         classifier = {
             XgbClassifier.classifier_type: XgbClassifier,
         }.get(classifier_params['classifier_type'], None)
         if classifier is None:
             raise ValueError(f"Classifier of type {classifier_params['classifier_type']} not found.")
         else:
-            data_sampler = classifier(classifier_params['additional_model_params'])
+            data_sampler = classifier(
+                params=classifier_params['additional_model_params'],
+                train_set=train_set,
+                test_set=test_set
+            )
         return data_sampler
 
-    def fit(self, features: pd.DataFrame, target: pd.Series, **kwargs) -> None:
-        self.outputs[self.trainset_features_key] = features
-        self.outputs[self.trainset_target_key] = target
-        clf = self.outputs[self.model_key]
-        clf.fit(features, target, **self.params['model_fit_params'], **kwargs)
+    @abstractmethod
+    def fit(self, **kwargs) -> None:
+        raise NotImplementedError
 
     def predict(self, features: pd.DataFrame) -> pd.Series:
         """
@@ -79,6 +100,16 @@ class XgbClassifier(Classifier):
     def run(self):
         self.outputs[self.model_key] = xgb.XGBClassifier(**self.params['model_initialize_params'])
 
+    def fit(self, **kwargs) -> None:
+        clf = self.outputs[self.model_key]
+        clf.fit(
+            self.train_set['features'],
+            self.train_set['target'],
+            eval_set=[(self.test_set['features'], self.test_set['target'])],
+            **self.params['model_fit_params'],
+            **kwargs,
+        )
+
 
 class PrepareTrainTarget(Task):
     """
@@ -94,9 +125,8 @@ class PrepareTrainTarget(Task):
     def get_prediction_steps(self) -> Pipeline:
         return self.get_sub_tasks_predicion_steps()
 
-    def transform(self, features: pd.DataFrame, target: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
-        # self.subtasks
-        pass
+    def transform(self, df: pd.DataFrame) -> pd.Series:
+        return Pipeline(steps=self.subtasks).transform(df)
 
 
 class PrepareTrainFeatures(Task):
@@ -110,9 +140,9 @@ class PrepareTrainFeatures(Task):
     def get_prediction_steps(self) -> Pipeline:
         return self.get_sub_tasks_predicion_steps()
 
-    def transform(self, features: pd.DataFrame) -> pd.DataFrame:
-        """Transform validation/test data using initialized object"""
-        pass
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        return Pipeline(steps=self.subtasks).transform(df)
+
 
 class MapTarget(Task):
     target_after_mapping_key = 'target_after_mapping'

@@ -75,7 +75,8 @@
       "classifier_type": "xgb",
       "additional_model_params": {
         "model_initialize_params": {
-          "tree_method": "hist"
+          "tree_method": "hist",
+          "early_stopping_rounds": 2
         },
         "model_fit_params": {
 
