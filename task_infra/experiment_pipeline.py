@@ -4,6 +4,8 @@ from sklearn.pipeline import Pipeline
 
 from task_infra.task import Task
 from task_infra.data_preparation import DataPrep
+from task_infra.train import TrainModel
+from task_infra.evaluations import Evaluator
 
 
 class Experiment(Task):
@@ -11,11 +13,10 @@ class Experiment(Task):
     def run(self):
         data_prep = DataPrep(self.params['data_prep_params'])
         self.subtasks.append(('DataPrep', data_prep))
-        # train_model = TrainModel(
-        #     train_df=data_prep.outputs['train_df'],
-        #     train_params=self.params['train_params'],
-        # )
-        # self.subtasks.append(("TrainModel", train_model))
+        trained_model = TrainModel(self.params['train_params'])
+        self.subtasks.append(("TrainedModel", trained_model))
+        evaluations = Evaluator(self.params['evaluation_params'])
+        self.subtasks.append(("Evaluations", evaluations))
 
     def get_prediction_steps(self) -> Pipeline:
         """
