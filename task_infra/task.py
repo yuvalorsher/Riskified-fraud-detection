@@ -15,7 +15,7 @@ class Task(ABC, BaseEstimator):
         self.params = params
         self.input_df = input_df
         self.outputs = dict()
-        self.subtasks: list[tuple[str, Type[Task]]] = []
+        self.subtasks: list[tuple[str, Task]] = []
         self.run_or_load_from_hash()
 
     @abstractmethod
