@@ -42,30 +42,33 @@
         "positive_to_negative_ratio": 0.5
       }
     },
-    "features_targets_params": {
+    "features_params": {
       "drop_columns": {
-        "columns_names":
-          [
-            "order_id",
-            "status",
-            "email_anoni",
-            "created_at",
-            "billing_country_code",
-            "shipping_country_code",
-            "shipping_method",
-            "currency_code",
-            "gateway",
-            "V4_our_age",
-            "V5_merchant_age",
-            "V1_link",
-            "V6_avs_result",
-            "V7_bill_ship_name_match"
-          ]
-      },
-      "target_col": "status",
+        "columns_names": [
+          "order_id",
+          "status",
+          "email_anoni",
+          "created_at",
+          "billing_country_code",
+          "shipping_country_code",
+          "shipping_method",
+          "currency_code",
+          "gateway",
+          "V4_our_age",
+          "V5_merchant_age",
+          "V1_link",
+          "V6_avs_result",
+          "V7_bill_ship_name_match"
+        ]
+      }
+    },
+    "target_params": {
       "target_mapping": {
-        "chargeback": 1,
-        "approved": 0
+        "target_col": "status",
+        "target_mapping_dict": {
+          "chargeback": 1,
+          "approved": 0
+        }
       }
     },
     "classifier_params": {

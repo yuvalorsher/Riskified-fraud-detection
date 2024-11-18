@@ -19,16 +19,21 @@ class TrainModel(Task):
         self.subtasks.append(('TrainTestSplit', train_test_split))
         trainset_sample = Sampler.get_sampler(self.params['trainset_sampler_params'], train_test_split.outputs[train_test_split.train_df_key])
         self.subtasks.append(('TrainsetSampler', trainset_sample))
-        model_features_targets_train = PrepareTrainFeaturesTargets(
-            self.params['features_targets_params'],
+        model_features_train = PrepareTrainFeatures(
+            self.params['features_params'],
             trainset_sample.outputs[trainset_sample.output_df_key]
         )
-        self.subtasks.append(('FeaturesTargetsTrain', model_features_targets_train))
+        self.subtasks.append(('PrepairFeaturesTrain', model_features_train))
+        model_target_train = PrepareTrainTarget(
+            self.params['target_params'],
+            trainset_sample.outputs[trainset_sample.output_df_key]
+        )
+        self.subtasks.append(('PrepairTargetTrain', model_target_train))
         classifier = Classifier.get_classifier(self.params['classifier_params'])
         # No time, but here would be another splitter to allow K-fold and early stopping.
         classifier.fit(
-            features=model_features_targets_train.outputs[model_features_targets_train.features_key],
-            target=model_features_targets_train.outputs[model_features_targets_train.target_key]
+            features=model_features_train.outputs[model_features_train.features_key],
+            target=model_target_train.outputs[model_target_train.target_key]
         )
         self.subtasks.append(('Classifier', classifier))
 
@@ -58,6 +63,12 @@ class Classifier(Task):
         clf = self.outputs[self.model_key]
         clf.fit(features, target, **self.params['model_fit_params'], **kwargs)
 
+    def predict(self, features: pd.DataFrame) -> pd.Series:
+        """
+        Use predict_proba and self.threshold to predict
+        """
+        pass
+
     def get_prediction_steps(self) -> Pipeline:
         return Pipeline(steps=['Classifier', self.outputs[self.model_key]])
 
@@ -69,23 +80,51 @@ class XgbClassifier(Classifier):
         self.outputs[self.model_key] = xgb.XGBClassifier(**self.params['model_initialize_params'])
 
 
-class PrepareTrainFeaturesTargets(Task):
+class PrepareTrainTarget(Task):
     """
-    This class will prepare engineered features, OneHotEncoding etc, on train set, and will generate fitted
-    transformer to apply onto test set.
+    This class will perform target transformations.
     """
-    features_key = 'features_df'
     target_key = 'target'
+
+    def run(self) -> None:
+        map_target = MapTarget(self.params["target_mapping"], self.input_df)
+        self.subtasks.append(('MapTarget', map_target))
+        self.outputs[self.target_key] = map_target.outputs[map_target.target_after_mapping_key]
+
+    def get_prediction_steps(self) -> Pipeline:
+        return self.get_sub_tasks_predicion_steps()
+
+    def transform(self, features: pd.DataFrame, target: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
+        # self.subtasks
+        pass
+
+
+class PrepareTrainFeatures(Task):
+    features_key = 'features_df'
 
     def run(self) -> None:
         drop_columns = DropColumns(self.params["drop_columns"], self.input_df)
         self.subtasks.append(('DropColumn', drop_columns))
         self.outputs[self.features_key] = drop_columns.outputs[drop_columns.df_after_drop_key]
-        target = self.input_df[self.params['target_col']].map(self.params["target_mapping"]) #TODO: This should actually be a task.
-        self.outputs[self.target_key] = target
 
     def get_prediction_steps(self) -> Pipeline:
         return self.get_sub_tasks_predicion_steps()
+
+    def transform(self, features: pd.DataFrame) -> pd.DataFrame:
+        """Transform validation/test data using initialized object"""
+        pass
+
+class MapTarget(Task):
+    target_after_mapping_key = 'target_after_mapping'
+
+    def run(self) -> None:
+        self.outputs[self.target_after_mapping_key] = self.transform(self.input_df)
+
+    def transform(self, df: pd.DataFrame) -> pd.Series:
+        return df[self.params['target_col']].map(self.params['target_mapping_dict'])
+
+    def get_prediction_steps(self) -> Pipeline:
+        return Pipeline(steps=[])
 
 
 class DropColumns(Task):
