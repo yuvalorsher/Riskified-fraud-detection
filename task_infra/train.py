@@ -16,6 +16,7 @@ class TrainModel(Task):
         train_test_split = TrainTestSplitter(self.params['train_test_split_params'], self.input_df)
         self.subtasks.append(('TrainTestSplit', train_test_split))
         trainset_sample = Sampler.get_sampler(self.params['trainset_sampler_params'], train_test_split.outputs[train_test_split.train_df_key])
+        self.subtasks.append(('TrainsetSampler', trainset_sample))
         model_features_targets_train = PrepareTrainFeaturesTargets(
             self.params['features_targets_params'],
             trainset_sample.outputs[trainset_sample.output_df_key]
@@ -25,6 +26,20 @@ class TrainModel(Task):
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
+
+
+class Classifier(Task):
+    @staticmethod
+    def get_classifier(classifier_params: dict, input_df) -> Classifier:
+        data_sampler = {
+            RandomSampler.sampler_type: RandomSampler,
+            OverSampler.sampler_type: OverSampler,
+        }.get(sampler_params['sampler_type'], None)
+        if data_sampler is None:
+            raise ValueError(f"Data sampler of type {sampler_params['sampler_type']} not found.")
+        else:
+            data_sampler = data_sampler(sampler_params['additional_sampler_params'], input_df)
+        return data_sampler
 
 
 class PrepareTrainFeaturesTargets(Task):
