@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pandas as pd
 
 from abc import ABC, abstractmethod
@@ -14,10 +15,52 @@ class TrainModel(Task):
     def run(self):
         train_test_split = TrainTestSplitter(self.params['train_test_split_params'], self.input_df)
         self.subtasks.append(('TrainTestSplit', train_test_split))
-
+        trainset_sample = Sampler.get_sampler(self.params['trainset_sampler_params'], train_test_split.outputs[train_test_split.train_df_key])
+        model_features_targets_train = PrepareTrainFeaturesTargets(
+            self.params['features_targets_params'],
+            trainset_sample.outputs[trainset_sample.output_df_key]
+        )
+        self.subtasks.append(('FeaturesTargetsTrain', model_features_targets_train))
+        # classifier = Classifier
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
+
+
+class PrepareTrainFeaturesTargets(Task):
+    """
+    This class will prepare engineered features, OneHotEncoding etc, on train set, and will generate fitted
+    transformer to apply onto test set.
+    """
+    features_key = 'features_df'
+    target_key = 'target_df'
+
+    def run(self) -> None:
+        drop_columns = DropColumns(self.params["drop_columns"], self.input_df)
+        self.subtasks.append(('DropColumn', drop_columns))
+        self.outputs[self.features_key] = drop_columns.outputs[drop_columns.df_after_drop_key]
+        self.outputs[self.target_key] = self.input_df[self.params['target_col']]
+
+    def get_prediction_steps(self) -> Pipeline:
+        return self.get_sub_tasks_predicion_steps()
+
+
+class DropColumns(Task):
+    """
+    Currently dropping columns is done by manually adding columns to drop, including features before preprocessing
+    (e.g., age before clipping). This should be automated, with each transformer announcing it's output cols (or cols
+    to drop since he made redundant).
+    """
+    df_after_drop_key = 'df_after_drop'
+
+    def run(self) -> None:
+        self.outputs[self.df_after_drop_key] = self.transform(self.input_df)
+
+    def transform(self, df: pd.DataFrame):
+        return df.drop(columns=self.params['columns_names'])
+
+    def get_prediction_steps(self) -> Pipeline:
+        return Pipeline(steps=['DropColumns', self])
 
 
 class TrainTestSplitter(Task):

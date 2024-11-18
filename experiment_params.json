@@ -41,6 +41,36 @@
         "positive_label": "chargeback",
         "positive_to_negative_ratio": 0.5
       }
+    },
+    "features_targets_params": {
+      "drop_columns": {
+        "columns_names":
+          [
+            "order_id",
+            "status",
+            "email_anoni",
+            "created_at",
+            "billing_country_code",
+            "shipping_country_code",
+            "shipping_method",
+            "currency_code",
+            "gateway",
+            "V4_our_age",
+            "V5_merchant_age"
+          ]
+      },
+      "target_col": "status"
+    },
+    "classifier_params": {
+      "model_type": "XGB",
+      "additional_model_params": {
+        "model_initialize_params": {
+
+        },
+        "model_fit_params": {
+
+        }
+      }
     }
   },
   "evaluation_params": {
