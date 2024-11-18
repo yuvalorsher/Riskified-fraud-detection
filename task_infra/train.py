@@ -202,7 +202,7 @@ class MapTarget(Task):
         self.outputs[self.target_after_mapping_key] = self.transform(self.input_df)
 
     def transform(self, df: pd.DataFrame) -> pd.Series:
-        return df[self.params['target_col']].map(self.params['target_mapping_dict'])
+        return df[self.params['target_col']].map(self.params['target_mapping_dict']).astype(bool)
 
     def get_prediction_steps(self) -> Pipeline:
         return Pipeline(steps=[])
