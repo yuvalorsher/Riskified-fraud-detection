@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_a
 
 
 class Evaluator(Task):
-    classifier_metrics_key = 'classifier_metrics'
+    classification_metrics_key = 'classification_metrics'
     break_even_fee_key = 'break_even_fee'
 
     def __init__(
@@ -33,10 +33,10 @@ class Evaluator(Task):
         super().__init__(params)
 
     def run(self):
-        self.outputs[self.classifier_metrics_key] = self.get_classifier_metrics()
+        self.outputs[self.classification_metrics_key] = self.get_classification_metrics()
         self.outputs[self.break_even_fee_key] = self.get_min_fee()
 
-    def get_classifier_metrics(self):
+    def get_classification_metrics(self):
         return {
             metric_name: self._get_train_test_metric_dict(
                 train_y_true=self.train_target,
