@@ -3,9 +3,11 @@ import pandas as pd
 
 from abc import ABC, abstractmethod
 from task_infra.task import Task
+from task_infra.consts import EXCHANGE_RATES
+
 from typing import Callable
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, precision_recall_curve, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 
 
 class Evaluator(Task):
@@ -32,7 +34,7 @@ class Evaluator(Task):
 
     def run(self):
         self.outputs[self.classifier_metrics_key] = self.get_classifier_metrics()
-        self.outputs[self.break_even_fee_key] = self.get_break_even_fee()
+        self.outputs[self.break_even_fee_key] = self.get_min_fee()
 
     def get_classifier_metrics(self):
         return {
@@ -55,8 +57,21 @@ class Evaluator(Task):
     def get_prediction_steps(self):
         return Pipeline(steps=[])
 
-    def get_break_even_fee(self):
-        pass
+    def get_min_fee(self) -> float:
+        """
+        Calculate the fee to meet the reuired ratio of CB to revenue.
+        Assumes all (or most) of merchant's declines will also be declined by us.
+        """
+        approved_transactions = self.test_set.loc[~self.predictions['test']]
+        transaction_values = self.convert_currency(
+            values=approved_transactions['total_spent'],
+            currencies=approved_transactions['currency_code'],
+        )
+        cb_mask = self.test_target.loc[approved_transactions.index]
+        counts_for_fee = (~cb_mask).sum()
+        cost_of_cb = transaction_values.loc[cb_mask].sum()
+        fee = cost_of_cb / (self.params['cost_of_cb_to_revenue_ratio'] * counts_for_fee)
+        return fee
 
     @staticmethod
     def _get_train_test_metric_dict(
@@ -71,3 +86,13 @@ class Evaluator(Task):
                 test=metric(test_y_true, test_y_pred),
         )
 
+    @staticmethod
+    def convert_currency(
+            values: pd.Series,
+            currencies: pd.Series,
+    ) -> pd.Series:
+        """
+        TODO: move to general utils
+        """
+        exchange_rates = currencies.map(lambda x: EXCHANGE_RATES.get(x, 1))
+        return values*exchange_rates

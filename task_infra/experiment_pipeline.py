@@ -9,7 +9,6 @@ from task_infra.evaluations import Evaluator
 
 
 class Experiment(Task):
-
     def run(self):
         data_prep = DataPrep(self.params['data_prep_params'])
         self.subtasks.append(('DataPrep', data_prep))
