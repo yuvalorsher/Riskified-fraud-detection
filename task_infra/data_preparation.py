@@ -16,7 +16,7 @@ class DataPrep(Task):
     def run(self):
         data_loader = DataLoader.get_loader(self.params['data_loader_params'])
         self.subtasks.append(('DataLoader', data_loader))
-        data_sampler = Sampler.get_sampler(self.params['dataset_sampler_params'])
+        data_sampler = Sampler.get_sampler(self.params['dataset_sampler_params'], data_loader.outputs[data_loader.output_df_key])
         self.subtasks.append(('SampleData', data_sampler))
         label_clearer = ClearLabel(self.params['clear_label_params'], data_sampler.outputs[data_sampler.output_df_key])
         self.subtasks.append(('ClearLabel', label_clearer))
@@ -88,10 +88,12 @@ class DataLoader(Task):
     @staticmethod
     def get_loader(data_loader_params: dict) -> DataLoader:
         data_loader = {
-            CsvDataLoader.data_type: CsvDataLoader(data_loader_params),
+            CsvDataLoader.data_type: CsvDataLoader,
         }.get(data_loader_params['data_type'], None)
         if data_loader is None:
             raise ValueError(f"Data loader for data type {data_loader_params['data_type']} not found.")
+        else:
+            data_loader = data_loader(data_loader_params)
         return data_loader
 
     def get_prediction_steps(self):
