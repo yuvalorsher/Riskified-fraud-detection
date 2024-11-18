@@ -13,7 +13,7 @@ class Experiment(Task):
     def run(self):
         data_prep = DataPrep(self.params['data_prep_params'])
         self.subtasks.append(('DataPrep', data_prep))
-        trained_model = TrainModel(self.params['train_params'])
+        trained_model = TrainModel(self.params['train_params'], input_df=data_prep.outputs[data_prep.output_df_key])
         self.subtasks.append(("TrainedModel", trained_model))
         evaluations = Evaluator(self.params['evaluation_params'])
         self.subtasks.append(("Evaluations", evaluations))
