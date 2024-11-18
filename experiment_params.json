@@ -86,6 +86,6 @@
     }
   },
   "evaluation_params": {
-    
+    "cost_of_cb_to_revenue_ratio": 0.5
   }
 }

@@ -19,7 +19,15 @@ class Experiment(Task):
             dropped_label_dataset=data_prep.get_declined_samples(),
         )
         self.subtasks.append(("TrainedModel", trained_model))
-        evaluations = Evaluator(self.params['evaluation_params'])
+        evaluations = Evaluator(
+            params=self.params['evaluation_params'],
+            train_set=trained_model.outputs[trained_model.train_set_key],
+            train_target=trained_model.outputs[trained_model.train_target_key],
+            test_set=trained_model.outputs[trained_model.test_set_key],
+            test_target=trained_model.outputs[trained_model.test_target_key],
+            declined_test_set=trained_model.outputs[trained_model.declined_test_set_key],
+            predictions=trained_model.outputs[trained_model.predictions_key]
+        )
         self.subtasks.append(("Evaluations", evaluations))
 
     def get_prediction_steps(self) -> Pipeline:
