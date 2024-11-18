@@ -3,8 +3,8 @@ import pandas as pd
 
 from abc import ABC, abstractmethod
 from task_infra.task import Task
-from typing import Type, Self
-
+from typing import Type
+from sklearn.pipeline import Pipeline
 
 class DataPrep(Task):
     def __init__(self, params: dict):
@@ -34,6 +34,9 @@ class DataLoader(Task):
         if data_loader is None:
             raise ValueError(f"Data loader for data type {data_loader_params['data_type']} not found.")
         return data_loader
+
+    def get_prediction_steps(self):
+        return Pipeline()
 
 
 class CsvDataLoader(DataLoader):

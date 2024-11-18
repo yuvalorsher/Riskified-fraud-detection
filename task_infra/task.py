@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+from sklearn.pipeline import Pipeline#, BaseEstimator
 
 class Task(ABC):
     """
@@ -15,6 +15,10 @@ class Task(ABC):
 
     @abstractmethod
     def run(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_predicion_steps(self) -> Pipeline:
         raise NotImplementedError()
 
     @staticmethod
