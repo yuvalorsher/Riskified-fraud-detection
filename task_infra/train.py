@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from typing import Type
 from sklearn.pipeline import Pipeline
 
+import xgboost as xgb
+
 from task_infra.task import Task
 from task_infra.sampling import Sampler
 from task_infra.consts import DATE_COL
@@ -22,24 +24,49 @@ class TrainModel(Task):
             trainset_sample.outputs[trainset_sample.output_df_key]
         )
         self.subtasks.append(('FeaturesTargetsTrain', model_features_targets_train))
-        # classifier = Classifier
+        classifier = Classifier.get_classifier(self.params['classifier_params'])
+        # No time, but here would be another splitter to allow K-fold and early stopping.
+        classifier.fit(
+            features=model_features_targets_train.outputs[model_features_targets_train.features_key],
+            target=model_features_targets_train.outputs[model_features_targets_train.target_key]
+        )
+        self.subtasks.append(('Classifier', classifier))
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
 
 
 class Classifier(Task):
+    model_key = 'model'
+    trainset_features_key = 'trainset_features'
+    trainset_target_key = 'trainset_target_key'
+
     @staticmethod
-    def get_classifier(classifier_params: dict, input_df) -> Classifier:
-        data_sampler = {
-            RandomSampler.sampler_type: RandomSampler,
-            OverSampler.sampler_type: OverSampler,
-        }.get(sampler_params['sampler_type'], None)
-        if data_sampler is None:
-            raise ValueError(f"Data sampler of type {sampler_params['sampler_type']} not found.")
+    def get_classifier(classifier_params: dict) -> Classifier:
+        classifier = {
+            XgbClassifier.classifier_type: XgbClassifier,
+        }.get(classifier_params['classifier_type'], None)
+        if classifier is None:
+            raise ValueError(f"Classifier of type {classifier_params['classifier_type']} not found.")
         else:
-            data_sampler = data_sampler(sampler_params['additional_sampler_params'], input_df)
+            data_sampler = classifier(classifier_params['additional_model_params'])
         return data_sampler
+
+    def fit(self, features: pd.DataFrame, target: pd.Series, **kwargs) -> None:
+        self.outputs[self.trainset_features_key] = features
+        self.outputs[self.trainset_target_key] = target
+        clf = self.outputs[self.model_key]
+        clf.fit(features, target, **self.params['model_fit_params'], **kwargs)
+
+    def get_prediction_steps(self) -> Pipeline:
+        return Pipeline(steps=['Classifier', self.outputs[self.model_key]])
+
+
+class XgbClassifier(Classifier):
+    classifier_type = "xgb"
+
+    def run(self):
+        self.outputs[self.model_key] = xgb.XGBClassifier(**self.params['model_initialize_params'])
 
 
 class PrepareTrainFeaturesTargets(Task):
@@ -48,13 +75,14 @@ class PrepareTrainFeaturesTargets(Task):
     transformer to apply onto test set.
     """
     features_key = 'features_df'
-    target_key = 'target_df'
+    target_key = 'target'
 
     def run(self) -> None:
         drop_columns = DropColumns(self.params["drop_columns"], self.input_df)
         self.subtasks.append(('DropColumn', drop_columns))
         self.outputs[self.features_key] = drop_columns.outputs[drop_columns.df_after_drop_key]
-        self.outputs[self.target_key] = self.input_df[self.params['target_col']]
+        target = self.input_df[self.params['target_col']].map(self.params["target_mapping"]) #TODO: This should actually be a task.
+        self.outputs[self.target_key] = target
 
     def get_prediction_steps(self) -> Pipeline:
         return self.get_sub_tasks_predicion_steps()

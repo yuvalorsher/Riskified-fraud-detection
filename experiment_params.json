@@ -56,16 +56,23 @@
             "currency_code",
             "gateway",
             "V4_our_age",
-            "V5_merchant_age"
+            "V5_merchant_age",
+            "V1_link",
+            "V6_avs_result",
+            "V7_bill_ship_name_match"
           ]
       },
-      "target_col": "status"
+      "target_col": "status",
+      "target_mapping": {
+        "chargeback": 1,
+        "approved": 0
+      }
     },
     "classifier_params": {
-      "model_type": "XGB",
+      "classifier_type": "xgb",
       "additional_model_params": {
         "model_initialize_params": {
-
+          "tree_method": "hist"
         },
         "model_fit_params": {
 
