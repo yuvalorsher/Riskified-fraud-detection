@@ -18,14 +18,26 @@ class DataPrep(Task):
         self.subtasks.append(('DataLoader', data_loader))
         data_sampler = Sampler.get_sampler(self.params['dataset_sampler_params'], data_loader.outputs[data_loader.output_df_key])
         self.subtasks.append(('SampleData', data_sampler))
-        label_clearer = ClearLabel(self.params['clear_label_params'], data_sampler.outputs[data_sampler.output_df_key])
-        self.subtasks.append(('ClearLabel', label_clearer))
-        value_clipper = ValueClipper(self.params['clipper_params'], label_clearer.outputs[label_clearer.cleared_df_key])
+        value_clipper = ValueClipper(self.params['clipper_params'], data_sampler.outputs[data_sampler.output_df_key])
         self.subtasks.append(('ValueClipper', value_clipper))
-        self.outputs[self.output_df_key] = value_clipper.outputs[value_clipper.output_df_key]
+        # Currently label clearer must be the last step because we need this df ready for TrainModel step
+        label_clearer = ClearLabel(self.params['clear_label_params'], value_clipper.outputs[value_clipper.output_df_key])
+        self.subtasks.append(('ClearLabel', label_clearer))
+        self.outputs[self.output_df_key] = label_clearer.outputs[label_clearer.cleared_df_key]
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
+
+    def get_subtask(self, subtask_name: str) -> Task | None:
+        for subtask in self.subtasks:
+            if subtask[0] == subtask_name:
+                return subtask[1]
+        else:
+            return None
+
+    def get_declined_samples(self) -> pd.DataFrame:
+        label_clearer = self.get_subtask('ClearLabel')
+        return label_clearer.outputs[label_clearer.dropped_df_key]
 
 
 class ClearLabel(Task):
