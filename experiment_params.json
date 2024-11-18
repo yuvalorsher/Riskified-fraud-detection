@@ -80,7 +80,8 @@
         },
         "model_fit_params": {
 
-        }
+        },
+        "required_approval_rate": 0.9
       }
     }
   },

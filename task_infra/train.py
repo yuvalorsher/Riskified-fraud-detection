@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import numpy as np
 import pandas as pd
 
 from abc import ABC, abstractmethod
@@ -13,6 +15,10 @@ from task_infra.consts import DATE_COL
 
 
 class TrainModel(Task):
+
+    def __init__(self, params: dict, data_set: pd.DataFrame, dropped_label_dataset):
+        self.dropped_label_dataset = dropped_label_dataset
+        super().__init__(params, input_df=data_set)
 
     def run(self):
         train_test_split = TrainTestSplitter(self.params['train_test_split_params'], self.input_df)
@@ -31,6 +37,8 @@ class TrainModel(Task):
         self.subtasks.append(('PrepairTargetTrain', model_target_train))
         test_features = model_features_train.transform(train_test_split.outputs[train_test_split.test_df_key])
         test_target = model_target_train.transform(train_test_split.outputs[train_test_split.test_df_key])
+        declined_testset = train_test_split.get_test_set(self.dropped_label_dataset)
+        declined_features = model_features_train.transform(declined_testset)
         classifier = Classifier.get_classifier(
             classifier_params=self.params['classifier_params'],
             train_set=self._get_dataset_dict(
@@ -40,7 +48,8 @@ class TrainModel(Task):
             test_set=self._get_dataset_dict(
                 features=test_features,
                 target=test_target
-            )
+            ),
+            declined_features=declined_features,
         )
         # No time, but here would be another splitter to allow K-fold and early stopping.
         classifier.fit()
@@ -59,30 +68,52 @@ class TrainModel(Task):
 
 class Classifier(Task):
     model_key = 'model'
+    threshold_key = 'threshold'
 
-    def __init__(self, params: dict, train_set: dict, test_set: dict):
+    def __init__(self, params: dict, train_set: dict, test_set: dict, declined_features: pd.DataFrame):
         self.train_set = train_set
         self.test_set = test_set
+        self.declined_features = declined_features
         super().__init__(params)
 
+    @abstractmethod
+    def _fit_estimator(self, **kwargs) -> None:
+        raise NotImplementedError
+
+    def fit(self, **kwargs) -> None:
+        self._fit_estimator(**kwargs)
+        test_period_flow = pd.concat([self.declined_features, self.test_set['features']])
+        probabilities = self.outputs[self.model_key].predict_proba(test_period_flow)
+        self.outputs[self.threshold_key] = self.get_required_threshold(
+            approved_probabilities=probabilities[:, 0],
+            required_approval_rate=self.params['required_approval_rate'],
+        )
+
     @staticmethod
-    def get_classifier(classifier_params: dict, train_set: dict, test_set: dict) -> Classifier:
+    def get_classifier(classifier_params: dict, train_set: dict, test_set: dict, declined_features: pd.DataFrame) -> Classifier:
         classifier = {
             XgbClassifier.classifier_type: XgbClassifier,
         }.get(classifier_params['classifier_type'], None)
         if classifier is None:
             raise ValueError(f"Classifier of type {classifier_params['classifier_type']} not found.")
         else:
-            data_sampler = classifier(
+            classifier = classifier(
                 params=classifier_params['additional_model_params'],
                 train_set=train_set,
-                test_set=test_set
+                test_set=test_set,
+                declined_features=declined_features
             )
-        return data_sampler
+        return classifier
 
-    @abstractmethod
-    def fit(self, **kwargs) -> None:
-        raise NotImplementedError
+    @staticmethod
+    def get_required_threshold(approved_probabilities: np.ndarray, required_approval_rate: float) -> float:
+        """
+        approved_probabilities - if probability > threshold then they are approved.
+        i.e., these are the probabilities for label 0.
+        """
+        descending_probabilities = np.sort(approved_probabilities)[::-1]
+        threshold_ind = int(np.ceil(len(descending_probabilities) * required_approval_rate) - 1)
+        return descending_probabilities[threshold_ind]
 
     def predict(self, features: pd.DataFrame) -> pd.Series:
         """
@@ -100,7 +131,7 @@ class XgbClassifier(Classifier):
     def run(self):
         self.outputs[self.model_key] = xgb.XGBClassifier(**self.params['model_initialize_params'])
 
-    def fit(self, **kwargs) -> None:
+    def _fit_estimator(self, **kwargs) -> None:
         clf = self.outputs[self.model_key]
         clf.fit(
             self.train_set['features'],
@@ -184,15 +215,27 @@ class TrainTestSplitter(Task):
     test_df_key = 'test_df'
 
     def run(self) -> None:
-        self.outputs[self.train_df_key] = self.input_df[
-            (self.input_df[DATE_COL] >= self.params['train_start_date']) &
-            (self.input_df[DATE_COL] < self.params['test_start_date'])
-        ]
-        self.outputs[self.test_df_key] = self.input_df[
-            (self.input_df[DATE_COL] >= self.params['test_start_date']) &
-            (self.input_df[DATE_COL] < self.params['test_end_date'])
-            ]
+        self.outputs[self.train_df_key] = self.get_train_set(self.input_df)
+        self.outputs[self.test_df_key] = self.get_test_set(self.input_df)
         self.run_asserts()
+
+    def get_train_set(self, data_set: pd.DataFrame) -> pd.DataFrame:
+        return data_set[
+            data_set[DATE_COL].between(
+                self.params['train_start_date'],
+                self.params['test_start_date'],
+                inclusive='left'
+            )
+        ]
+
+    def get_test_set(self, data_set: pd.DataFrame) -> pd.DataFrame:
+        return data_set[
+            data_set[DATE_COL].between(
+                self.params['test_start_date'],
+                self.params['test_end_date'],
+                inclusive='left'
+            )
+        ]
 
     def get_prediction_steps(self) -> Pipeline:
         return self.get_sub_tasks_predicion_steps()
