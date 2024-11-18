@@ -7,6 +7,16 @@
         "parse_dates": ["created_at"]
       }
     },
+    "dataset_sampler_params": {
+      "sampler_type": "random_sampler",
+      "additional_sampler_params": {
+        "n": null,
+        "frac": 0.8
+      }
+    },
+    "clear_label_params": {
+      "labels_to_clear": ["declined"]
+    },
     "clipper_params": {
       "V4_our_age": {
         "lower": 0,
@@ -21,8 +31,16 @@
   "train_params": {
     "train_test_split_params": {
       "train_start_date": "2016-09-01",
-      "train_end_date": "2017-04-01",
+      "test_start_date": "2017-04-01",
       "test_end_date": "2017-06-01"
+    },
+    "trainset_sampler_params": {
+      "sampler_type": "over_sampler",
+      "additional_sampler_params": {
+        "label_col": "status",
+        "positive_label": "chargeback",
+        "positive_to_negative_ratio": 0.5
+      }
     }
   },
   "evaluation_params": {

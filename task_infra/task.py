@@ -5,6 +5,7 @@ from sklearn.base import BaseEstimator
 from typing import Type
 from sklearn.pipeline import make_pipeline
 
+
 class Task(ABC, BaseEstimator):
     """
     A Task object that deals with part of, or the whole, training
