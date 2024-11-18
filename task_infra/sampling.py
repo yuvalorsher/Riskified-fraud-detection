@@ -17,13 +17,15 @@ class Sampler(Task):
         raise NotImplementedError()
 
     @staticmethod
-    def get_sampler(sampler_params: dict) -> Sampler:
+    def get_sampler(sampler_params: dict, input_df) -> Sampler:
         data_sampler = {
-            RandomSampler.sampler_type: RandomSampler(sampler_params['additional_sampler_params']),
-            OverSampler.sampler_type: OverSampler(sampler_params['additional_sampler_params']),
+            RandomSampler.sampler_type: RandomSampler,
+            OverSampler.sampler_type: OverSampler,
         }.get(sampler_params['sampler_type'], None)
         if data_sampler is None:
             raise ValueError(f"Data sampler of type {sampler_params['data_type']} not found.")
+        else:
+            data_sampler = data_sampler(sampler_params['additional_sampler_params'], input_df)
         return data_sampler
 
     def run(self) -> None:
