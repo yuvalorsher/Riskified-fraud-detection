@@ -1,10 +1,11 @@
 import pandas as pd
 from abc import ABC, abstractmethod
-from sklearn.pipeline import Pipeline#, BaseEstimator
+from sklearn.pipeline import Pipeline
+from sklearn.base import BaseEstimator
 from typing import Type
 from sklearn.pipeline import make_pipeline
 
-class Task(ABC):
+class Task(ABC, BaseEstimator):
     """
     A Task object that deals with part of, or the whole, training
     #TODO: Add function to get expected parametrs for the task, and for child task
@@ -48,4 +49,3 @@ class Task(ABC):
             self.load_if_cached()
         else:
             self.run()
-
