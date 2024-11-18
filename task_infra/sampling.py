@@ -23,7 +23,7 @@ class Sampler(Task):
             OverSampler.sampler_type: OverSampler,
         }.get(sampler_params['sampler_type'], None)
         if data_sampler is None:
-            raise ValueError(f"Data sampler of type {sampler_params['data_type']} not found.")
+            raise ValueError(f"Data sampler of type {sampler_params['sampler_type']} not found.")
         else:
             data_sampler = data_sampler(sampler_params['additional_sampler_params'], input_df)
         return data_sampler
@@ -43,7 +43,7 @@ class RandomSampler(Sampler):
 
 
 class OverSampler(Sampler):
-    sampler_type = "under_sampler"
+    sampler_type = "over_sampler"
 
     def sample_data(self, df: pd.DataFrame) -> pd.DataFrame:
         positive_mask = df[self.params['label_col']] == self.params['positive_label']
