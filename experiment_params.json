@@ -1,9 +1,27 @@
 {
-  'data_loader_params': {
-    'data_type': 'csv',
-    'data_path': 'Data/riskified_ds_home_task_dataset_(3).csv',
-    'additional_load_params': {
-      'parse_dates': 'created_at',
+  "data_prep_params": {
+    "data_loader_params": {
+      "data_type": "csv",
+      "data_path": "Data/riskified_ds_home_task_dataset_(3).csv",
+      "additional_load_params": {
+        "parse_dates": "created_at"
+      }
+    },
+    "clipper_params": {
+      "V4_internal_age": {
+        "lower": 0,
+        "upper": 100
+      },
+      "V5_merchante_age": {
+        "lower": 0,
+        "upper": 100
+      }
     }
+  },
+  "train_params": {
+    
+  },
+  "evaluation_params": {
+    
   }
 }
