@@ -10,6 +10,7 @@ class Task(ABC, BaseEstimator):
     """
     A Task object that deals with part of, or the whole, training
     #TODO: Add function to get expected parametrs for the task, and for child task
+    #TODO: Set random seeds.
     """
 
     def __init__(self, params: dict, input_df: pd.DataFrame | None = None):
