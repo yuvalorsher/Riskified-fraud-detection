@@ -137,7 +137,7 @@ class Classifier(Task):
         """
         charge_back_probabilities = self.outputs[self.model_key].predict_proba(features)
         return pd.Series(
-            data=charge_back_probabilities<self.outputs[self.threshold_key],
+            data=charge_back_probabilities[:,1]<self.outputs[self.threshold_key],
             index=features.index
         )
 
