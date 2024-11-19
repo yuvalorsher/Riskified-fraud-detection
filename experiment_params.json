@@ -2,7 +2,7 @@
   "data_prep_params": {
     "data_loader_params": {
       "data_type": "csv",
-      "data_path": "D:/Google Drive (not syncing)/Bill and Bureaucracy/job search/Data Science/Riskified/Home assignment/Riskified-fraud-detection/Data/riskified_ds_home_task_dataset_(3).csv",
+      "data_path": "Data/transactions.csv",
       "additional_load_params": {
         "parse_dates": ["created_at"]
       }
@@ -11,7 +11,7 @@
       "sampler_type": "random_sampler",
       "additional_sampler_params": {
         "n": null,
-        "frac": 0.8
+        "frac": 0.1
       }
     },
     "clear_label_params": {
