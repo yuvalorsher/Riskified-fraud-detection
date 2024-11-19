@@ -5,6 +5,7 @@ from task_infra.data_preparation import DataPrep
 from task_infra.train import TrainModel
 from task_infra.evaluations import Evaluator
 
+import pickle
 
 class Experiment(Task):
     def run(self):
@@ -36,5 +37,10 @@ class Experiment(Task):
         subtasks_named_steps = self.get_sub_tasks_predicion_steps()
         return subtasks_named_steps
 
-    def get_trained_model(self):
+    def get_trained_model(self) -> Pipeline:
         return Pipeline(self.get_prediction_steps())
+
+    def save_trained_model(self, saved_model_path: str) -> None:
+        trained_model: Pipeline = self.get_trained_model()
+        with open('saved_model_path', 'wb') as handle:
+            pickle.dump(trained_model, handle)
