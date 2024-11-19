@@ -1,5 +1,3 @@
-import pandas as pd
-import json
 from sklearn.pipeline import Pipeline
 
 from task_infra.task import Task
@@ -18,7 +16,7 @@ class Experiment(Task):
             dropped_label_dataset=data_prep.get_declined_samples(),
         )
         self.subtasks.append(("TrainedModel", trained_model))
-        evaluations = Evaluator(
+        evaluation = Evaluator(
             params=self.params['evaluation_params'],
             train_set=trained_model.outputs[trained_model.train_set_key],
             train_target=trained_model.outputs[trained_model.train_target_key],
@@ -27,7 +25,7 @@ class Experiment(Task):
             declined_test_set=trained_model.outputs[trained_model.declined_test_set_key],
             predictions=trained_model.outputs[trained_model.predictions_key]
         )
-        self.subtasks.append(("Evaluations", evaluations))
+        self.subtasks.append(("Evaluation", evaluation))
 
     def get_prediction_steps(self):
         """
