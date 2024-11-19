@@ -1,5 +1,5 @@
 import json
-from task_infra.experiment_pipeline import Experiment
+from task_infra.experiment import Experiment
 from task_infra.reporter import Reporter
 import pickle
 
@@ -13,7 +13,7 @@ full_experiment_savepath = "full_experiment.pkl"
 
 if __name__ == '__main__':
     if load_experiment:
-        with open(full_experiment_savepath, 'rb') as handle:
+        with open(load_experiment_path, 'rb') as handle:
             exp = pickle.load(handle)
     else:
         with open(json_file) as f:

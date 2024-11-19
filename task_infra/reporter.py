@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import pandas as pd
-from task_infra.experiment_pipeline import Experiment
+from task_infra.experiment import Experiment
 from task_infra.evaluations import Evaluator
 
 
@@ -47,11 +47,13 @@ class Reporter:
             if 'confusion_matrix' in metrics_df.index:  # Sorry for the blunt hard-coding, ran out of time.
                 metrics_df = metrics_df.drop('confusion_matrix')
             return metrics_df.style.background_gradient(axis=1).format('{:.3f}').to_html()
+
         print("Creating report from experiment.")
         evaluation_step: Evaluator = experiment.get_subtask('Evaluation')
         classification_metrics = evaluation_step.outputs[evaluation_step.classification_metrics_key]
         required_fee = evaluation_step.outputs[evaluation_step.required_fee_key]
         required_ratio = evaluation_step.params['cost_of_cb_to_revenue_ratio']
+        required_approval_rate = experiment.params['train_params']['classifier_params']['additional_model_params']['required_approval_rate']
 
         reporter = Reporter()
         reporter.add_header('Model Performance Report', level=1)
@@ -59,7 +61,8 @@ class Reporter:
         reporter.add_raw_html(_classification_dict_to_html(classification_metrics))
         reporter.add_header("Required Fee", level=2)
         reporter.add_paragraph(
-            f"Requested ratio of cost of CB to revenue: {required_ratio:.2}"
+            f"Requested approval rate of {required_approval_rate:.1%} "
+            f"and ratio of cost of CB to revenue: {required_ratio:.2}"
         )
         reporter.add_paragraph(f"To get this ratio, required fee must be: {required_fee:.1%} of transactions.")
         return reporter
