@@ -25,7 +25,7 @@ class Task(ABC, BaseEstimator):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_prediction_steps(self) -> Pipeline:
+    def get_prediction_steps(self) -> list[(str, BaseEstimator)]:
         raise NotImplementedError()
 
     @staticmethod
@@ -33,10 +33,9 @@ class Task(ABC, BaseEstimator):
         pass
 
     def get_sub_tasks_predicion_steps(self):
-        steps = [prediction_step for subtask in self.subtasks for prediction_step in subtask[1].get_prediction_steps().steps]
-        # stes = make_pipeline(*[prediction_steps])
-        return make_pipeline(steps)
-
+        steps_per_subtask = [named_subtask[1].get_prediction_steps() for named_subtask in self.subtasks]
+        flattened_steps = [step for steplist in steps_per_subtask for step in steplist]
+        return flattened_steps
 
     def check_if_cached(self):
         # param_hash = get_param_hash(self.params)

@@ -29,7 +29,10 @@ class TrainModel(Task):
     def run(self):
         train_test_split = TrainTestSplitter(self.params['train_test_split_params'], self.input_df)
         self.subtasks.append(('TrainTestSplit', train_test_split))
-        trainset_sample = Sampler.get_sampler(self.params['trainset_sampler_params'], train_test_split.outputs[train_test_split.train_df_key])
+        trainset_sample = Sampler.get_sampler(
+            self.params['trainset_sampler_params'],
+            train_test_split.outputs[train_test_split.train_df_key]
+        )
         self.subtasks.append(('TrainsetSampler', trainset_sample))
         self.outputs[self.train_set_key] = trainset_sample.outputs[trainset_sample.output_df_key]
         self.outputs[self.test_set_key] = train_test_split.outputs[train_test_split.test_df_key]
@@ -141,8 +144,8 @@ class Classifier(Task):
             index=features.index
         )
 
-    def get_prediction_steps(self) -> Pipeline:
-        return Pipeline(steps=['Classifier', self.outputs[self.model_key]])
+    def get_prediction_steps(self):
+        return [('Classifier', self.outputs[self.model_key])]
 
 
 class XgbClassifier(Classifier):
@@ -173,8 +176,8 @@ class PrepareTrainTarget(Task):
         self.subtasks.append(('MapTarget', map_target))
         self.outputs[self.target_key] = map_target.outputs[map_target.target_after_mapping_key]
 
-    def get_prediction_steps(self) -> Pipeline:
-        return self.get_sub_tasks_predicion_steps()
+    def get_prediction_steps(self):
+        return []
 
     def transform(self, df: pd.DataFrame) -> pd.Series:
         return Pipeline(steps=self.subtasks).transform(df)
@@ -188,7 +191,7 @@ class PrepareTrainFeatures(Task):
         self.subtasks.append(('DropColumn', drop_columns))
         self.outputs[self.features_key] = drop_columns.outputs[drop_columns.df_after_drop_key]
 
-    def get_prediction_steps(self) -> Pipeline:
+    def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -222,8 +225,8 @@ class DropColumns(Task):
     def transform(self, df: pd.DataFrame):
         return df.drop(columns=self.params['columns_names'])
 
-    def get_prediction_steps(self) -> Pipeline:
-        return Pipeline(steps=['DropColumns', self])
+    def get_prediction_steps(self):
+        return [('DropColumns', self)]
 
 
 class TrainTestSplitter(Task):
@@ -257,8 +260,8 @@ class TrainTestSplitter(Task):
             )
         ]
 
-    def get_prediction_steps(self) -> Pipeline:
-        return self.get_sub_tasks_predicion_steps()
+    def get_prediction_steps(self):
+        return []
 
     def run_asserts(self) -> None:
         """
