@@ -53,7 +53,6 @@
         "columns_to_onehot": [
           "billing_country_code",
           "shipping_country_code",
-          "shipping_method",
           "currency_code",
           "gateway",
           "V4_our_age",
@@ -68,7 +67,8 @@
           "order_id",
           "status",
           "email_anoni",
-          "created_at"
+          "created_at",
+          "shipping_method"
         ]
       }
     },
