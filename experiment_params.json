@@ -41,7 +41,7 @@
       "test_end_date": "2017-06-01"
     },
     "trainset_sampler_params": {
-      "sampler_type": "over_sampler",
+      "sampler_type": "random_over_sampler",
       "additional_sampler_params": {
         "label_col": "status",
         "positive_label": "chargeback",
