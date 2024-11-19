@@ -41,7 +41,11 @@ class Experiment(Task):
     def get_trained_model(self) -> Pipeline:
         return Pipeline(self.get_prediction_steps())
 
-    def save_trained_model(self, saved_model_path: str) -> None:
+    def save_trained_model(self, save_path: str) -> None:
         trained_model: Pipeline = self.get_trained_model()
-        with open(saved_model_path, 'wb') as handle:
+        with open(save_path, 'wb') as handle:
             pickle.dump(trained_model, handle)
+
+    def save_experiment(self, save_path: str) -> None:
+        with open(save_path, 'wb') as handle:
+            pickle.dump(self, handle)
