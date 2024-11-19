@@ -3,7 +3,7 @@ import pandas as pd
 
 from abc import ABC, abstractmethod
 from task_infra.task import Task
-from task_infra.consts import EXCHANGE_RATES
+from task_infra.consts import EXCHANGE_RATES, DEDAULT_EXCHANGE_RATE
 
 from typing import Callable
 from sklearn.pipeline import Pipeline
@@ -96,5 +96,5 @@ class Evaluator(Task):
         """
         TODO: move to general utils
         """
-        exchange_rates = currencies.map(lambda x: EXCHANGE_RATES.get(x, 1))
+        exchange_rates = currencies.map(lambda x: EXCHANGE_RATES.get(x, DEDAULT_EXCHANGE_RATE))
         return values*exchange_rates
