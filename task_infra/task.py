@@ -1,16 +1,14 @@
 from __future__ import annotations
-import pandas as pd
 from abc import ABC, abstractmethod
-from sklearn.pipeline import Pipeline
+import pandas as pd
 from sklearn.base import BaseEstimator
-from typing import Type
-from sklearn.pipeline import make_pipeline
 
 
 class Task(ABC, BaseEstimator):
     """
-    A Task object that deals with part of, or the whole, training
+    A Task object that deals with part of, or the whole, model training.
     #TODO: Add function to get expected parametrs for the task, and for child task
+    #TODO: Add function to get expected output columns for the task, and for child task
     #TODO: Set random seeds.
     """
 
@@ -19,14 +17,21 @@ class Task(ABC, BaseEstimator):
         self.input_df = input_df
         self.outputs = dict()
         self.subtasks: list[tuple[str, Task]] = []
-        self.run_or_load_from_hash()
+
+        self.run_or_load_from_cache()
 
     @abstractmethod
     def run(self):
+        """
+        Code to perform the task at hand. Save results to self.outputs.
+        """
         raise NotImplementedError()
 
     @abstractmethod
     def get_prediction_steps(self) -> list[(str, BaseEstimator)]:
+        """
+        Extract relevant steps from dataprep and the train preparation, and the model from train
+        """
         raise NotImplementedError()
 
     @staticmethod
@@ -45,7 +50,7 @@ class Task(ABC, BaseEstimator):
     def load_if_cached(self):
         pass
 
-    def run_or_load_from_hash(self):
+    def run_or_load_from_cache(self):
         if self.check_if_cached() is True:
             print("Experiment Found! Loading cached results.")
             self.load_if_cached()
