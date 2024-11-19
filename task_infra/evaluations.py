@@ -33,6 +33,7 @@ class Evaluator(Task):
         super().__init__(params)
 
     def run(self):
+        print(f"Start Evaluation step.")
         self.outputs[self.classification_metrics_key] = self.get_classification_metrics()
         self.outputs[self.break_even_fee_key] = self.get_min_fee()
 

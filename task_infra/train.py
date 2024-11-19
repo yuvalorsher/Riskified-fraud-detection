@@ -28,6 +28,7 @@ class TrainModel(Task):
         super().__init__(params, input_df=data_set)
 
     def run(self):
+        print(f"Start training step.")
         train_test_split = TrainTestSplitter(self.params['train_test_split_params'], self.input_df)
         self.subtasks.append(('TrainTestSplit', train_test_split))
         trainset_sample = Sampler.get_sampler(
@@ -102,6 +103,7 @@ class Classifier(Task):
         raise NotImplementedError
 
     def fit(self, **kwargs) -> None:
+        print(f"Fitting estimator.")
         self._fit_estimator(**kwargs)
         test_period_flow = pd.concat([self.declined_features, self.test_set['features']])
         probabilities = self.outputs[self.model_key].predict_proba(test_period_flow)
@@ -174,6 +176,7 @@ class PrepareTrainTarget(Task):
     target_key = 'target'
 
     def run(self) -> None:
+        print("Preparing target.")
         map_target = MapTarget(self.params["target_mapping"], self.input_df)
         self.subtasks.append(('MapTarget', map_target))
         self.outputs[self.target_key] = map_target.outputs[map_target.target_after_mapping_key]
@@ -189,11 +192,13 @@ class PrepareTrainFeatures(Task):
     features_key = 'features_df'
 
     def run(self) -> None:
+        print("Starting to prepare train features.")
         drop_columns = DropColumns(self.params["drop_columns"], self.input_df)
         self.subtasks.append(('DropColumn', drop_columns))
         one_hot = OneHot(self.params['one_hot_params'], drop_columns.outputs[drop_columns.df_after_drop_key])
         self.subtasks.append(('OneHot', one_hot))
         self.outputs[self.features_key] = one_hot.outputs[one_hot.df_after_onehot_key]
+        print("Finished preparing train features.")
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
@@ -206,6 +211,7 @@ class MapTarget(Task):
     target_after_mapping_key = 'target_after_mapping'
 
     def run(self) -> None:
+        print("Mapping target.")
         self.outputs[self.target_after_mapping_key] = self.transform(self.input_df)
 
     def transform(self, df: pd.DataFrame) -> pd.Series:
@@ -222,6 +228,7 @@ class OneHot(Task):
     encoder_key = 'encoder'
 
     def run(self) -> None:
+        print(f"One Hot Encoding: {self.params['columns_to_onehot']}")
         enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
         enc.fit(self.input_df[self.params['columns_to_onehot']])
         self.outputs[self.encoder_key] = enc
@@ -245,6 +252,7 @@ class DropColumns(Task):
     df_after_drop_key = 'df_after_drop'
 
     def run(self) -> None:
+        print(f"Dropping columns: {self.params['columns_names']}.")
         self.outputs[self.df_after_drop_key] = self.transform(self.input_df)
 
     def transform(self, df: pd.DataFrame):
@@ -263,6 +271,7 @@ class TrainTestSplitter(Task):
     test_df_key = 'test_df'
 
     def run(self) -> None:
+        print("Splitting train-test sets.")
         self.outputs[self.train_df_key] = self.get_train_set(self.input_df)
         self.outputs[self.test_df_key] = self.get_test_set(self.input_df)
         self.run_asserts()

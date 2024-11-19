@@ -29,6 +29,7 @@ class Sampler(Task):
         return data_sampler
 
     def run(self) -> None:
+        print(f"Sampling dataset.")
         self.outputs[self.output_df_key] = self.sample_data(self.input_df)
 
     def get_prediction_steps(self):

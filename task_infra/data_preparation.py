@@ -14,6 +14,7 @@ class DataPrep(Task):
     output_df_key = 'clean_df'
 
     def run(self):
+        print(f"Start data preperation step.")
         data_loader = DataLoader.get_loader(self.params['data_loader_params'])
         self.subtasks.append(('DataLoader', data_loader))
         data_sampler = Sampler.get_sampler(self.params['dataset_sampler_params'], data_loader.outputs[data_loader.output_df_key])
@@ -89,6 +90,7 @@ class ValueClipper(Task):
         return self
 
     def run(self):
+        print(f"Clipping values.")
         self.outputs[self.output_df_key] = self.transform(self.input_df)
 
     def get_prediction_steps(self):
@@ -124,6 +126,10 @@ class DataLoader(Task):
     def load_data(self) -> pd.DataFrame:
         raise NotImplementedError()
 
+    def run(self) -> None:
+        print("Loading data.")
+        self.outputs[self.output_df_key] = self.load_data()
+
     @staticmethod
     def get_loader(data_loader_params: dict) -> DataLoader:
         data_loader = {
@@ -146,9 +152,6 @@ class CsvDataLoader(DataLoader):
         self.data_path = params['data_path']
         self.additional_load_params = params['additional_load_params']
         super().__init__(params)
-
-    def run(self) -> None:
-        self.outputs[self.output_df_key] = self.load_data()
 
     def load_data(self) -> pd.DataFrame:
         return pd.read_csv(self.data_path, **self.additional_load_params)
