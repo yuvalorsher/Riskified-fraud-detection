@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_a
 
 class Evaluator(Task):
     classification_metrics_key = 'classification_metrics'
-    break_even_fee_key = 'break_even_fee'
+    required_fee_key = 'required_fee'
 
     def __init__(
             self,
@@ -35,7 +35,7 @@ class Evaluator(Task):
     def run(self):
         print(f"Start Evaluation step.")
         self.outputs[self.classification_metrics_key] = self.get_classification_metrics()
-        self.outputs[self.break_even_fee_key] = self.get_min_fee()
+        self.outputs[self.required_fee_key] = self.get_min_fee()
 
     def get_classification_metrics(self):
         return {
@@ -51,8 +51,8 @@ class Evaluator(Task):
                 ('recall', recall_score),
                 ('roc_auc_score', roc_auc_score),
                 ('f1_score', f1_score),
-                ('predicted_true_rate_to_actual_true_rate', lambda y_true, y_pred: y_pred.sum() / y_true.sum()), # Not so relevant when we over-sample train
-                ('confusion_matrix', confusion_matrix),
+                # ('predicted_true_rate_to_actual_true_rate', lambda y_true, y_pred: y_pred.sum() / y_true.sum()), # Not so relevant when we over-sample train
+                # ('confusion_matrix', confusion_matrix),
             ]
         }
 
