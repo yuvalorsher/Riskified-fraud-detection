@@ -81,25 +81,6 @@ class ValueClipper(Task):
     def get_prediction_steps(self):
         return [('ValueClipper', self)]
 
-
-class DropNaRows(Task):
-    suffix = '_droppedna'
-    output_df_key = 'droppedna_df'
-
-    def transform(self, df: pd.DataFrame):
-        len_before_dropna = len(df)
-        df_transformed = df.dropna(subset=self.params['columns_to_dropna'])
-        len_after = len(df_transformed)
-        print(f"Dropped {len_before_dropna-len_after} sample with NaNs in {self.params['columns_to_topna']} out of {len_before_dropna} samples.")
-        #TODO: Assert some maximal ratio not reached
-        return df_transformed
-
-    def fit(self, x, y):
-        return self
-
-    def run(self):
-        self.outputs[self.output_df_key] = self.transform(self.input_df)
-
     def get_prediction_steps(self):
         return Pipeline(steps=['DropnaRows', self])
 
