@@ -57,7 +57,7 @@ class Reporter:
         reporter.add_header('Model Performance Report', level=1)
         reporter.add_header('Classification Metrics', level=2)
         reporter.add_raw_html(_classification_dict_to_html(classification_metrics))
-        reporter.add_header("Required Fee")
+        reporter.add_header("Required Fee", level=2)
         reporter.add_paragraph(
             f"Requested ratio of cost of CB to revenue: {required_ratio:.2}"
         )
