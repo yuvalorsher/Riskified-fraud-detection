@@ -67,7 +67,7 @@ class ClearLabel(Task):
         return ~df[LABEL_COL].isin(self.labels_to_clear)
 
     def get_prediction_steps(self):
-        return Pipeline(steps=['ClearLabel', self])
+        return []
 
 
 class ValueClipper(Task):
@@ -75,12 +75,14 @@ class ValueClipper(Task):
     output_df_key = 'clipped_df'
 
     def transform(self, df: pd.DataFrame):
+        suffix = self.clipped_suffix if self.params['keep_original_col'] == 1 else ''
         df_transformed = df.assign(
             **{
-                f'{col}{self.clipped_suffix}': df[col].clip(bounds['lower'], bounds['upper'])
-                for col, bounds in self.params.items()
+                f'{col}{suffix}': df[col].clip(bounds['lower'], bounds['upper'])
+                for col, bounds in self.params['columns_to_clip'].items()
             }
         )
+
         return df_transformed
 
     def fit(self, x, y):
@@ -90,7 +92,29 @@ class ValueClipper(Task):
         self.outputs[self.output_df_key] = self.transform(self.input_df)
 
     def get_prediction_steps(self):
-        return Pipeline(steps=['ValueClipper', self])
+        return [('ValueClipper', self)]
+
+
+class DropNaRows(Task):
+    suffix = '_droppedna'
+    output_df_key = 'droppedna_df'
+
+    def transform(self, df: pd.DataFrame):
+        len_before_dropna = len(df)
+        df_transformed = df.dropna(subset=self.params['columns_to_dropna'])
+        len_after = len(df_transformed)
+        print(f"Dropped {len_before_dropna-len_after} sample with NaNs in {self.params['columns_to_topna']} out of {len_before_dropna} samples.")
+        #TODO: Assert some maximal ratio not reached
+        return df_transformed
+
+    def fit(self, x, y):
+        return self
+
+    def run(self):
+        self.outputs[self.output_df_key] = self.transform(self.input_df)
+
+    def get_prediction_steps(self):
+        return Pipeline(steps=['DropnaRows', self])
 
 
 class DataLoader(Task):
@@ -112,7 +136,7 @@ class DataLoader(Task):
         return data_loader
 
     def get_prediction_steps(self):
-        return Pipeline([])
+        return []
 
 
 class CsvDataLoader(DataLoader):

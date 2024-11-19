@@ -55,7 +55,7 @@ class Evaluator(Task):
         }
 
     def get_prediction_steps(self):
-        return Pipeline(steps=[])
+        return self.get_sub_tasks_predicion_steps()
 
     def get_min_fee(self) -> float:
         """

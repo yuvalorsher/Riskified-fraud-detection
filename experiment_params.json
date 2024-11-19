@@ -17,14 +17,20 @@
     "clear_label_params": {
       "labels_to_clear": ["declined"]
     },
+    "drop_na_rows_params": {
+      "columns_to_dropna": []
+    },
     "clipper_params": {
-      "V4_our_age": {
+      "keep_original_col": 0,
+      "columns_to_clip": {
+        "V4_our_age": {
         "lower": 0,
         "upper": 100
       },
       "V5_merchant_age": {
         "lower": 0,
         "upper": 100
+      }
       }
     }
   },

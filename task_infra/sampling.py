@@ -32,7 +32,7 @@ class Sampler(Task):
         self.outputs[self.output_df_key] = self.sample_data(self.input_df)
 
     def get_prediction_steps(self):
-        return Pipeline([])
+        return []
 
 
 class RandomSampler(Sampler):
