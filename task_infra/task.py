@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pandas as pd
 from abc import ABC, abstractmethod
 from sklearn.pipeline import Pipeline
@@ -50,3 +51,13 @@ class Task(ABC, BaseEstimator):
             self.load_if_cached()
         else:
             self.run()
+
+    def get_subtask(self, subtask_name: str) -> Task | None:
+        """
+        #TODO: Perform recursively
+        """
+        for subtask in self.subtasks:
+            if subtask[0] == subtask_name:
+                return subtask[1]
+        else:
+            return

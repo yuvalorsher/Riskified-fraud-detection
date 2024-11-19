@@ -29,16 +29,6 @@ class DataPrep(Task):
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
 
-    def get_subtask(self, subtask_name: str) -> Task | None:
-        """
-        #TODO: Move to Task and perform recursively
-        """
-        for subtask in self.subtasks:
-            if subtask[0] == subtask_name:
-                return subtask[1]
-        else:
-            return None
-
     def get_declined_samples(self) -> pd.DataFrame:
         label_clearer = self.get_subtask('ClearLabel')
         return label_clearer.outputs[label_clearer.dropped_df_key]
