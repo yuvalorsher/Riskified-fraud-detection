@@ -81,9 +81,6 @@ class ValueClipper(Task):
     def get_prediction_steps(self):
         return [('ValueClipper', self)]
 
-    def get_prediction_steps(self):
-        return Pipeline(steps=['DropnaRows', self])
-
 
 class DataLoader(Task):
     output_df_key = 'raw_data'
