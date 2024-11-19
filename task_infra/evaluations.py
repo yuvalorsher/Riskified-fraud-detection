@@ -36,6 +36,7 @@ class Evaluator(Task):
         print(f"Start Evaluation step.")
         self.outputs[self.classification_metrics_key] = self.get_classification_metrics()
         self.outputs[self.required_fee_key] = self.get_min_fee()
+        print(f"Finished Evaluation step.")
 
     def get_classification_metrics(self):
         return {
