@@ -30,15 +30,13 @@ class Experiment(Task):
         self.subtasks.append(("Evaluation", evaluation))
 
     def get_prediction_steps(self):
-        """
-        Extract relevant steps from dataprep and the train preparation, and the model from train
-        ##TODO: The returned trained model currently does not predict we need to make it work
-        :return:
-        """
         subtasks_named_steps = self.get_sub_tasks_predicion_steps()
         return subtasks_named_steps
 
     def get_trained_model(self) -> Pipeline:
+        """
+        Collects all steps from subtasks and wraps in fitted Pipeline.
+        """
         return Pipeline(self.get_prediction_steps())
 
     def save_trained_model(self, save_path: str) -> None:
