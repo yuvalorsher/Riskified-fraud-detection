@@ -4,7 +4,7 @@ import pickle
 
 path_to_data = './Data/transactions.csv'
 path_to_model = 'yuval_trained_model.pkl'
-path_to_prediction_csv = 'predictions.csv'
+predictions_csv_savepath = 'predictions.csv'
 predict_samples = None  # To make quicker, set to None if you want to predict on all transactions
 
 
@@ -21,4 +21,4 @@ if __name__ == '__main__':
         transactions = transactions.sample(predict_samples, random_state=42)
 
     preds = trained_model.predict(transactions)
-    predictions_to_csv(preds, transactions.index, path_to_prediction_csv)
+    predictions_to_csv(preds, transactions.index, predictions_csv_savepath)
