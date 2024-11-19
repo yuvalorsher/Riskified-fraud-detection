@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Type
 from sklearn.pipeline import Pipeline
 
+from sklearn.preprocessing import OneHotEncoder
 import xgboost as xgb
 
 from task_infra.task import Task
@@ -94,6 +95,7 @@ class Classifier(Task):
         self.test_set = test_set
         self.declined_features = declined_features
         super().__init__(params)
+
 
     @abstractmethod
     def _fit_estimator(self, **kwargs) -> None:
@@ -189,7 +191,9 @@ class PrepareTrainFeatures(Task):
     def run(self) -> None:
         drop_columns = DropColumns(self.params["drop_columns"], self.input_df)
         self.subtasks.append(('DropColumn', drop_columns))
-        self.outputs[self.features_key] = drop_columns.outputs[drop_columns.df_after_drop_key]
+        one_hot = OneHot(self.params['one_hot_params'], drop_columns.outputs[drop_columns.df_after_drop_key])
+        self.subtasks.append(('OneHot', one_hot))
+        self.outputs[self.features_key] = one_hot.outputs[one_hot.df_after_onehot_key]
 
     def get_prediction_steps(self):
         return self.get_sub_tasks_predicion_steps()
@@ -211,11 +215,32 @@ class MapTarget(Task):
         return Pipeline(steps=[])
 
 
+class OneHot(Task):
+    """
+    """
+    df_after_onehot_key = 'df_after_onehot'
+    encoder_key = 'encoder'
+
+    def run(self) -> None:
+        enc = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        enc.fit(self.input_df[self.params['columns_to_onehot']])
+        self.outputs[self.encoder_key] = enc
+        encoded_df = self.transform(self.input_df)
+        self.outputs[self.df_after_onehot_key] = encoded_df
+
+    def transform(self, df: pd.DataFrame):
+        one_hot_encoded = self.outputs[self.encoder_key].transform(df[self.params['columns_to_onehot']])
+        one_hot_col_names = self.outputs[self.encoder_key].get_feature_names_out(self.params['columns_to_onehot'])
+        encoded_df = pd.DataFrame(index=df.index, data=one_hot_encoded, columns=one_hot_col_names)
+        final_df = pd.concat([df.drop(columns=self.params['columns_to_onehot']), encoded_df], axis=1)
+        return final_df
+
+    def get_prediction_steps(self):
+        return [('OneHot', self)]
+
+
 class DropColumns(Task):
     """
-    Currently dropping columns is done by manually adding columns to drop, including features before preprocessing
-    (e.g., age before clipping). This should be automated, with each transformer announcing it's output cols (or cols
-    to drop since he made redundant).
     """
     df_after_drop_key = 'df_after_drop'
 
