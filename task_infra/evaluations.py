@@ -50,6 +50,7 @@ class Evaluator(Task):
                 ('recall', recall_score),
                 ('roc_auc_score', roc_auc_score),
                 ('f1_score', f1_score),
+                ('predicted_true_rate_to_actual_true_rate', lambda y_true, y_pred: y_pred.sum() / y_true.sum()), # Not so relevant when we over-sample train
                 ('confusion_matrix', confusion_matrix),
             ]
         }
