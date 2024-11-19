@@ -1,8 +1,7 @@
 from __future__ import annotations
 import pandas as pd
 
-from abc import ABC, abstractmethod
-from typing import Type
+from abc import abstractmethod
 from sklearn.pipeline import Pipeline
 
 from task_infra.task import Task
@@ -38,12 +37,8 @@ class ClearLabel(Task):
     cleared_df_key = 'cleared_df'
     dropped_df_key = 'dropped_df'
 
-    def __init__(self, params: dict, input_df: pd.DataFrame):
-        self.labels_to_clear = params['labels_to_clear']
-        super().__init__(params, input_df)
-
     def run(self):
-        print(f"Dropping labels: {self.labels_to_clear}")
+        print(f"Dropping labels: {self.params['labels_to_clear']}")
         mask = self.get_mask(self.input_df)
         self.outputs[self.cleared_df_key] = self.input_df.loc[mask]
         self.outputs[self.dropped_df_key] = self.input_df.loc[~mask]
@@ -55,7 +50,7 @@ class ClearLabel(Task):
 
     def get_mask(self, df: pd.DataFrame) -> pd.Series:
         """Returns bool Series, True indicates labels to keep."""
-        return ~df[LABEL_COL].isin(self.labels_to_clear)
+        return ~df[LABEL_COL].isin(self.params['labels_to_clear'])
 
     def get_prediction_steps(self):
         return []
