@@ -43,12 +43,11 @@ class Reporter:
     @staticmethod
     def create_report_from_experiment(experiment: Experiment) -> Reporter:
         def _classification_dict_to_html(classification_metrics: dict) -> str:
-            metrics_df = (pd.DataFrame(classification_metrics)
-                          .T
-                          .drop('confusion_matrix')  # IF in metrics, has to be speicially treated
-                          )
+            metrics_df = pd.DataFrame(classification_metrics).T
+            if 'confusion_matrix' in metrics_df.index:  # Sorry for the blunt hard-coding, ran out of time.
+                metrics_df = metrics_df.drop('confusion_matrix')
             return metrics_df.style.background_gradient(axis=1).format('{:.3f}').to_html()
-
+        print("Creating report from experiment.")
         evaluation_step: Evaluator = experiment.get_subtask('Evaluation')
         classification_metrics = evaluation_step.outputs[evaluation_step.classification_metrics_key]
         required_fee = evaluation_step.outputs[evaluation_step.required_fee_key]
