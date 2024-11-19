@@ -68,9 +68,9 @@ class Evaluator(Task):
             currencies=approved_transactions['currency_code'],
         )
         cb_mask = self.test_target.loc[approved_transactions.index]
-        counts_for_fee = (~cb_mask).sum()
         cost_of_cb = transaction_values.loc[cb_mask].sum()
-        fee = cost_of_cb / (self.params['cost_of_cb_to_revenue_ratio'] * counts_for_fee)
+        non_cb_transaction_value = transaction_values.loc[~cb_mask].sum()
+        fee = cost_of_cb / (self.params['cost_of_cb_to_revenue_ratio'] * non_cb_transaction_value)
         return fee
 
     @staticmethod
