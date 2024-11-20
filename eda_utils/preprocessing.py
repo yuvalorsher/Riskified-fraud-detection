@@ -4,7 +4,7 @@ from eda_utils.general import copy_if_not_inplace
 from sklearn.preprocessing import LabelEncoder
 
 
-# Missing values imputation
+## Missing values imputation
 def impute_cols(
     df: pd.DataFrame,
     impute_col: str,
@@ -47,7 +47,7 @@ def impute_by_group_mean(
         return df
 
 
-# Encodings
+## Encodings
 def one_hot_encode(
         df: pd.DataFrame,
         col_encoding: dict,
