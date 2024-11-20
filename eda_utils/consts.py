@@ -1,12 +1,10 @@
-DATA_PATH = 'datasets/'
-
 # Conversion for frequency shorthand to x-axis title
 FREQ_SHORT_TO_FULL = dict(
-            D = 'Day',
-            W = 'Week',
-            M = 'Month',
-            Y = 'Year',
-            Q = 'Quarter',
+            D='Day',
+            W='Week',
+            M='Month',
+            Y='Year',
+            Q='Quarter',
 )
 
 # NaN imputation dictionary column names
