@@ -3,8 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from abc import ABC, abstractmethod
-from typing import Type
+from abc import abstractmethod
 from sklearn.pipeline import Pipeline
 
 from sklearn.preprocessing import OneHotEncoder
@@ -24,6 +23,9 @@ class TrainModel(Task):
     declined_test_set_key = 'desclined_set'
 
     def __init__(self, params: dict, data_set: pd.DataFrame, dropped_label_dataset):
+        """
+        droppe_label_dataset is the transactions that were dropped due to having 'declined' label.
+        """
         self.dropped_label_dataset = dropped_label_dataset
         super().__init__(params, input_df=data_set)
 
@@ -97,12 +99,14 @@ class Classifier(Task):
         self.declined_features = declined_features
         super().__init__(params)
 
-
     @abstractmethod
     def _fit_estimator(self, **kwargs) -> None:
         raise NotImplementedError
 
     def fit(self, **kwargs) -> None:
+        """
+        fit estimator + calculate required threshold to achieve required_approval_rate
+        """
         print(f"Fitting estimator.")
         self._fit_estimator(**kwargs)
         test_period_flow = pd.concat([self.declined_features, self.test_set['features']])
@@ -110,6 +114,16 @@ class Classifier(Task):
         self.outputs[self.threshold_key] = self.get_required_threshold(
             approved_probabilities=probabilities[:, 0],
             required_approval_rate=self.params['required_approval_rate'],
+        )
+
+    def predict(self, features: pd.DataFrame) -> pd.Series:
+        """
+        Use predict_proba and self.threshold to predict
+        """
+        charge_back_probabilities = self.outputs[self.model_key].predict_proba(features)
+        return pd.Series(
+            data=charge_back_probabilities[:,0]<self.outputs[self.threshold_key],
+            index=features.index
         )
 
     @staticmethod
@@ -131,22 +145,12 @@ class Classifier(Task):
     @staticmethod
     def get_required_threshold(approved_probabilities: np.ndarray, required_approval_rate: float) -> float:
         """
-        approved_probabilities - if probability > threshold then they are approved.
+        approved_probabilities: if probability > threshold then they are approved.
         i.e., these are the probabilities for label 0.
         """
         descending_probabilities = np.sort(approved_probabilities)[::-1]
         threshold_ind = int(np.ceil(len(descending_probabilities) * required_approval_rate) - 1)
         return descending_probabilities[threshold_ind]
-
-    def predict(self, features: pd.DataFrame) -> pd.Series:
-        """
-        Use predict_proba and self.threshold to predict
-        """
-        charge_back_probabilities = self.outputs[self.model_key].predict_proba(features)
-        return pd.Series(
-            data=charge_back_probabilities[:,0]<self.outputs[self.threshold_key],
-            index=features.index
-        )
 
     def get_prediction_steps(self):
         return [('Classifier', self.outputs[self.model_key])]
@@ -222,8 +226,6 @@ class MapTarget(Task):
 
 
 class OneHot(Task):
-    """
-    """
     df_after_onehot_key = 'df_after_onehot'
     encoder_key = 'encoder'
 
@@ -247,8 +249,6 @@ class OneHot(Task):
 
 
 class DropColumns(Task):
-    """
-    """
     df_after_drop_key = 'df_after_drop'
 
     def run(self) -> None:
@@ -265,7 +265,7 @@ class DropColumns(Task):
 class TrainTestSplitter(Task):
     """
     #TODO: Add functionality to split by dataset size proportion (i.e. find the relevant date according to ratio),
-    # minimal number of positive labels, etc.)
+    minimal number of positive labels, etc.)
     """
     train_df_key = 'train_df'
     test_df_key = 'test_df'
