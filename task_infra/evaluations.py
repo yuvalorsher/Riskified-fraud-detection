@@ -1,13 +1,11 @@
 import numpy as np
 import pandas as pd
 
-from abc import ABC, abstractmethod
 from task_infra.task import Task
 from task_infra.consts import EXCHANGE_RATES, DEDAULT_EXCHANGE_RATE
 
 from typing import Callable
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score
 
 
 class Evaluator(Task):
@@ -94,8 +92,5 @@ class Evaluator(Task):
             values: pd.Series,
             currencies: pd.Series,
     ) -> pd.Series:
-        """
-        TODO: move to general utils
-        """
         exchange_rates = currencies.map(lambda x: EXCHANGE_RATES.get(x, DEDAULT_EXCHANGE_RATE))
         return values*exchange_rates
