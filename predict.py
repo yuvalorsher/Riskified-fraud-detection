@@ -5,7 +5,7 @@ import pickle
 path_to_data = './Data/transactions.csv'
 path_to_model = 'yuval_trained_model.pkl'
 predictions_csv_savepath = 'predictions.csv'
-predict_samples = None  # To make quicker, set to None if you want to predict on all transactions
+predict_samples = None  # To make quicker. Set to None if you want to predict on all transactions
 
 
 def predictions_to_csv(predictions: np.ndarray, pred_index: pd.Index, save_path: str) -> None:
